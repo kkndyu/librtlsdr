@@ -36,7 +36,7 @@
 #include <winsock2.h>
 #include "getopt/getopt.h"
 #endif
-
+#include <linux/tcp.h>
 #include <pthread.h>
 
 #include "rtl-sdr.h"
@@ -263,6 +263,28 @@ static int set_gain_by_index(rtlsdr_dev_t *_dev, unsigned int index)
 	return res;
 }
 
+static int set_gain_ext(rtlsdr_dev_t *_dev, unsigned int index)
+{
+	int res = 0;
+	int lna,mixer,vga=0;
+
+
+	char *pointer =(char *) &index;
+	if(*pointer == 16){
+		lna = *(pointer+3);
+		mixer = *(pointer+2);
+		vga = *(pointer+1);
+	}else{
+		lna = *(pointer);
+		mixer = *(pointer+1);
+		vga = *(pointer+2);
+	}
+	printf("lna=%d,mixer=%d,vga=%d",lna,mixer,vga);
+	//res = rtlsdr_set_tuner_gain_ext(_dev, lna, mixer, vga);
+
+	return res;
+}
+
 #ifdef _WIN32
 #define __attribute__(x)
 #pragma pack(push, 1)
@@ -354,6 +376,14 @@ static void *command_worker(void *arg)
 		case 0x0d:
 			printf("set tuner gain by index %d\n", ntohl(cmd.param));
 			set_gain_by_index(dev, ntohl(cmd.param));
+			break;
+		case 0x0e:
+			printf("set tuner gain by lna mixer and vga 0x%x\n", ntohl(cmd.param));
+			set_gain_ext(dev, ntohl(cmd.param));
+			break;
+		case 0x0f:
+			printf("set tuner bandwidth 0x%x\n", ntohl(cmd.param));
+			rtlsdr_set_tuner_bandwidth(dev, ntohl(cmd.param));
 			break;
 		default:
 			break;
@@ -545,6 +575,8 @@ int main(int argc, char **argv)
 		}
 
 		setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(ling));
+		int enable = 1;	
+		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void*)&enable, sizeof(enable));
 
 		printf("client accepted!\n");
 
@@ -569,7 +601,7 @@ int main(int argc, char **argv)
 		r = pthread_create(&command_thread, &attr, command_worker, NULL);
 		pthread_attr_destroy(&attr);
 
-		r = rtlsdr_read_async(dev, rtlsdr_callback, NULL, buf_num, 0);
+		r = rtlsdr_read_async(dev, rtlsdr_callback, NULL, buf_num, 16*1024);
 
 		pthread_join(tcp_worker_thread, &status);
 		pthread_join(command_thread, &status);
