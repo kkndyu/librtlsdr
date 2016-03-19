@@ -280,7 +280,7 @@ static int set_gain_ext(rtlsdr_dev_t *_dev, unsigned int index)
 		vga = *(pointer+2);
 	}
 	printf("lna=%d,mixer=%d,vga=%d",lna,mixer,vga);
-	//res = rtlsdr_set_tuner_gain_ext(_dev, lna, mixer, vga);
+	res = rtlsdr_set_tuner_gain_ext(_dev, lna, mixer, vga);
 
 	return res;
 }
