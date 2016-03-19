@@ -1074,7 +1074,7 @@ int rtlsdr_set_tuner_gain_ext(rtlsdr_dev_t *dev, int lna_gain, int mixer_gain, i
 
   return r;
 }
-+
+
 
 int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev)
 {
